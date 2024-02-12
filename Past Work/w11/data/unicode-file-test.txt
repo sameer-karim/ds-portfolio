@@ -1,0 +1,10 @@
+This is the unicode-file-test.txt file.
+There are lots of characters in here.  If 
+the file weren't read as UTF-8 there would be errors in the display.
+
+谁控制了媒体，谁就控制了思想。Cultural se puede compartir, vivir y no limitarse a una persona o grupo.
+ਭਾਰਤ ਦੀਆਂ ਲਿਖਣ ਪ੍ਰਣਾਲੀਆਂ ਪਾਲੀ ਤੋਂ ਬਣੀਆਂ ਹਨ. ਉਹ ਆਮ ਤੌਰ 'ਤੇ ਦੱਖਣੀ (ਖਜੂਰ ਦੇ ਪੱਤਿਆਂ' ਤੇ ਲਿਖਣ ਲਈ ਗੋਲ) ਅਤੇ ਉੱਤਰੀ (ਵਧੇਰੇ ਵਰਗ, ਸੱਕ ਜਾਂ ਕਾਗਜ਼ 'ਤੇ ਕਾਨੇ ਨਾਲ ਲਿਖੇ) ਦੁਆਰਾ ਸਮੂਹਬੱਧ ਹੁੰਦੇ ਹਨ.
+Письменность у славян развивали братья монахи Кирилл и Мефодий.
+Прочтите «Теорию коммуникативного действия, знания и человеческих интересов» Хабермаса, чтобы увидеть обнадеживающий постмодернизм, а не разрушительные ужасы, которыми он является сегодня.
+Lisez la théorie de l'action et de la connaissance communicatives et des intérêts humains d'Habermas pour un post-modernisme plein d'espoir, et non les horreurs destructrices qu'il est aujourd'hui.
+This is the end of the test file.
