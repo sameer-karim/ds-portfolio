@@ -1,0 +1,1 @@
+Welcome to my personal repo! In the 'Past Work' folder you will find much of my school work and various data science concepts covered in my course work. In the 'pythonCourse' folder, you will find two personal projects I developed. 
