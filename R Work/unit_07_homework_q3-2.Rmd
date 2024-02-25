@@ -1,0 +1,63 @@
+---
+output: 
+  pdf_document: 
+    fig_height: 3
+    fig_crop: false
+fontsize: 10pt
+geometry: margin=0.6in
+---
+## Unit 07 Homework Q3.2
+```{r setup, include=FALSE}
+library(knitr)
+library(ggplot2)
+library(lubridate)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load data, include=FALSE}
+data_file_path <- 'spring_2024_central\\data\\legislators-current.csv'
+data <- read.csv(data_file_path)
+summary(data)
+```
+### Legislators
+The current recommendation is to apply the Wilcoxon Rank-Sum test to test this statement. For this test to be valid, it must consider the following assumptions:  
+1. The groups are unpaired  
+2. The values are on a metric scale  
+3. The data is independent and identically distributed  
+4. The distribution of $X$ is the same as the distribution of $Y-\Delta$ for some constant $\Delta \in \mathbb{R}$  
+
+Or first assumption is that our groups are unpaired. Our observations are generated from different individuals across the population. 
+
+Our second assumption is that our variables are on a metric scale. To test this assumption we can look at a summary of our values:
+```{r summary of ages, echo=FALSE}
+age <- function(dob, age.day = today(), units = "years", floor = TRUE) {
+    calc.age = lubridate::interval(dob, age.day) / lubridate::duration(num = 1, units = units)
+    if (floor) return(as.integer(floor(calc.age)))
+    return(calc.age)
+}
+
+data$age = age(as.Date(data$birthday))
+summary(data$age)
+```
+These are numbers that are incremental.  
+
+Our third assumption is that the data is independent and identically distributed. The age of one senator does not give us information about the age of another senator.  
+
+Our fourth assumption is that The distribution of $X$ is the same as the distribution of $Y-\Delta$ for some constant $\Delta \in \mathbb{R}$. We can create a histogram each of the two variable groups to test this:  
+
+```{r Dems age, echo=FALSE}
+dems <- data[data$party == "Democrat",]
+reps <- data[data$party == "Republican",]
+
+ggplot() +
+    geom_histogram(aes(dems$age), binwidth = 5, color = "grey40", fill = "royalblue4") + 
+        labs(title = "Distribution of Ages for Democrats", x = "Age", y = "Frequency")
+
+```
+  
+```{r Reps age, echo=FALSE}
+ggplot() +
+    geom_histogram(aes(reps$age), binwidth = 5, color = "grey40", fill = "royalblue4") + 
+        labs(title = "Distribution of Ages for Republicans", x = "Age", y = "Frequency")
+
+```

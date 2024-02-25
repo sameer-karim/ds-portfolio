@@ -1,0 +1,56 @@
+---
+output: 
+  pdf_document: 
+    fig_height: 3
+    fig_crop: false
+fontsize: 10pt
+---
+## Unit 07 Homework Q3.3
+```{r setup, include=FALSE}
+library(knitr)
+library(ggplot2)
+library(wooldridge)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load data, include=FALSE}
+data("wine")
+summary(wine)
+```
+### Wine and health
+The current recommendation is to apply a signed-rank test to test this statement. For a signed-rank test to be valid, it must consider the following assumptions:  
+1. The groups are paired  
+2. The values are on a metric scale  
+3. The data is independent and identically distributed  
+4. The distribution of the difference $X - Y$ is symmetric around some mean $\mu$  
+
+Or first assumption is that our groups are paired. Our observations are generated from the same country being asked two different questions. 
+
+Our second assumption is that our variables are on a metric scale. To test this assumption we can look at a summary of our values. The values for heart disease deaths are as follows:
+```{r summary of heart, echo=FALSE}
+summary(wine$heart)
+```
+The values for liver disease deaths are as follows:
+```{r summary of liver, echo=FALSE}
+summary(wine$liver)
+```
+Our values are numbers that represent the average number of deaths in a given country. These numbers are a count and are incremental.  
+
+Our third assumption is that the data is independent and identically distributed. We have some risk that respondents in a given country have a shared household or are related which would mean a common genetic predisposition or health-related habits.  
+
+Our fourth assumption is that the distribution of the differences is symmetric around some mean $\mu$. We can create a histogram of the difference to test this:  
+
+```{r distribution, echo=FALSE}
+wine$diffs = wine$heart - wine$liver
+
+ggplot() +
+    geom_histogram(aes(wine$diffs), binwidth = 25, color = "grey40", fill = "royalblue4") + 
+        labs(title = "Distribution of Differences: Heart Deaths - Liver Deaths
+(Dashline = mean)", x = "Difference of Heart - Liver Deaths", y = "Frequency") +
+    geom_vline(aes(xintercept=mean(wine$diffs)), linewidth=1, linetype = "longdash")
+
+```
+Additionally, we can look at the mean and median of the difference values:
+```{r, echo=FALSE}
+summary(wine$diffs)
+```

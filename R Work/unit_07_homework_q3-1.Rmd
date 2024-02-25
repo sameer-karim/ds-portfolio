@@ -1,0 +1,48 @@
+---
+output: 
+  pdf_document: 
+    fig_height: 3
+    fig_crop: false
+fontsize: 10pt
+---
+# Unit 07 Homework Q3.1
+```{r setup, include=FALSE}
+library(knitr)
+library(ggplot2)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load data, include=FALSE}
+data_file_path <- 'spring_2024_central\\data\\Happiness_WHR.csv'
+data <- read.csv(data_file_path)
+summary(data)
+
+```
+### World Happiness
+The current recommendation is to apply a two-sample t-test to test this statement. For this test to be valid, it must consider the following assumptions:  
+1. The groups are unpaired  
+2. The values are on a metric scale  
+3. The data is independent and identically distributed  
+4. There are no major deviations from normality, considering the sample size  
+
+Or first assumption is that our groups are unpaired. Our groups countries and the values are responses from different people from those countries.
+
+Our second assumption is that our variables are on a metric scale. To test this assumption we can look at a summary of our values:
+```{r summary of ladder, echo=FALSE}
+summary(data$Life.Ladder)
+```
+Our values are numbers that represent the average of responses that are in the form of 0 to 10 ranking. We have some risk that response values are not truly incremental (meaning the difference from 8 to 9 is not the same as 9 to 10).
+
+Our third assumption is that the responses that were collected are independent and identically distributed. We have some risk that respondents were related to each other and therefore a household may hold the same level of happiness.
+
+Our fourth assumption is that our distribution does not have a significant deviation from normality. We can look at the distribution of our averages to get some sense:  
+
+```{r distribution, echo=FALSE}
+ggplot() +
+    geom_histogram(aes(data$Life.Ladder), binwidth = .5, color = "grey40", fill = "royalblue4") + 
+        labs(title = "Distribution of National Average Ladder Responses", x = "Average Ladder Response", y = "Frequency")
+
+```
+
+Due to the qualified range of responses, we do not have any extreme tails and we can see that we do not have large frequencies on the ends which would create significant skewness. Additionally, we have an N of 239 which would qualify under the central limit theorem.
+
