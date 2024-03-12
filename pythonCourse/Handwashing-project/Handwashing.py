@@ -1,80 +1,83 @@
-from cProfile import label
-from calendar import month
-from turtle import color
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
 
+# Load data
 yearly_df = pd.read_csv('Data/yearly_deaths_by_clinic.csv')
-print(yearly_df)
-
-# #Group births & deaths by clinic
-print(yearly_df.groupby('clinic') ['deaths'].sum())
-print(yearly_df.groupby('clinic') ['births'].sum())
-
-#Add a column showing proportion of deaths per clinic
-yearly_df['Proportion of Deaths'] = yearly_df['deaths'] / yearly_df['births']
-print(yearly_df)
-
-# #Separate 2 clinics into 2 datasets
-clinic_1 = yearly_df[yearly_df['clinic'] == 'clinic 1']
-clinic_2 = yearly_df[yearly_df['clinic'] == 'clinic 2']
-print(clinic_1)
-print(clinic_2)
-
-fig,ax = plt.subplots(figsize = (10,4))
-plt.bar(clinic_1.year, clinic_1.deaths, width= 0.6, color= 'red')
-plt.title('Clinic 1 Deaths by Year')
-plt.xlabel('Year')
-plt.ylabel('# of Deaths')
-
-fig,ax = plt.subplots(figsize = (10,4))
-plt.bar(clinic_2.year, clinic_2.deaths, width= 0.6, color= 'blue')
-plt.title('Clinic 2 Deaths by Year')
-plt.xlabel('Year')
-plt.ylabel('# of Deaths')
-
-ax= clinic_1.plot(x= 'year', y= 'Proportion of Deaths', label= 'clinic_1', color= 'red')
-clinic_2.plot(x= 'year', y= 'Proportion of Deaths', label= 'clinic_2', ax=ax, ylabel= 'Proportion of Deaths', color= 'blue')
-
-plt.show()
-
 monthly_df = pd.read_csv('Data/monthly_deaths.csv')
 
-monthly_df['Proportion of Deaths'] = monthly_df['deaths'] / monthly_df['births']
+# Group births & deaths by clinic
+clinic_deaths_sum = yearly_df.groupby('clinic')['deaths'].sum()
+clinic_births_sum = yearly_df.groupby('clinic')['births'].sum()
 
-#Dr Semmelweis ordered the doctors to wash their hands and made it obligatory in the summer of 1847 to 
-# see if that will affect the number of deaths, and since we have the monthly data now, we can trace the 
-# number of deaths before and after the handwashing started.
+# Add a column showing proportion of deaths per clinic
+yearly_df['Proportion of Deaths'] = yearly_df['deaths'] / yearly_df['births']
 
-#change dates from string to datetime data type
-monthly_df.dtypes
-monthly_df['date'] = pd.to_datetime(monthly_df['date'])
+# Separate clinics into 2 datasets
+clinic_1 = yearly_df[yearly_df['clinic'] == 'clinic 1']
+clinic_2 = yearly_df[yearly_df['clinic'] == 'clinic 2']
 
-#split dates before and after hadnwashing
-start_handwashing = pd.to_datetime('1847-06-01')
-before_handwashing = monthly_df[monthly_df['date'] < start_handwashing]
-after_handwashing = monthly_df[monthly_df['date'] >= start_handwashing]
+# Plotting
+fig, axes = plt.subplots(2, 1, figsize=(10, 8))
 
-#before handwashing
-fig,ax = plt.subplots(figsize = (10,4))
-x = before_handwashing['date']
-y = before_handwashing['deaths']
-plt.plot(x, y, color= 'orange')
-plt.xlabel('Date')
-plt.ylabel('Proportion of Deaths')
+# Clinic 1 deaths by year
+axes[0].bar(clinic_1['year'], clinic_1['deaths'], width=0.6, color='red')
+axes[0].set_title('Clinic 1 Deaths by Year')
+axes[0].set_xlabel('Year')
+axes[0].set_ylabel('# of Deaths')
 
-# #after handwashing
-fig,ax = plt.subplots(figsize = (10,4))
-x = after_handwashing['date']
-y = after_handwashing['deaths']
-plt.plot(x, y, color= 'purple')
-plt.xlabel('Date')
-plt.ylabel('Proportion of Deaths')
+# Clinic 2 deaths by year
+axes[1].bar(clinic_2['year'], clinic_2['deaths'], width=0.6, color='blue')
+axes[1].set_title('Clinic 2 Deaths by Year')
+axes[1].set_xlabel('Year')
+axes[1].set_ylabel('# of Deaths')
 
-#visualize before and after 
-ax= before_handwashing.plot(x= "date", y= "Proportion of Deaths", label= "Before Handwashing", color="orange")
-after_handwashing.plot(x= "date", y= "Proportion of Deaths", label= "After Handwashing", ax=ax, ylabel= "Proportion deaths", 
-color="green") 
-
+plt.tight_layout()
 plt.show()
+
+# Heatmaps
+fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+
+sns.heatmap(clinic_1.pivot_table(index='year', columns='clinic', values='Proportion of Deaths'),
+            cmap='Reds', ax=axes[0])
+axes[0].set_title('Proportion of Deaths in Clinic 1 over Years')
+
+sns.heatmap(clinic_2.pivot_table(index='year', columns='clinic', values='Proportion of Deaths'),
+            cmap='Blues', ax=axes[1])
+axes[1].set_title('Proportion of Deaths in Clinic 2 over Years')
+
+plt.tight_layout()
+plt.show()
+
+# Basic Machine Learning - Linear Regression
+# Let's predict the proportion of deaths in Clinic 1 based on the year
+X = clinic_1[['year']]
+y = clinic_1['Proportion of Deaths']
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Create and fit the model
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+# Predict on the test set
+y_pred = model.predict(X_test)
+
+# Visualize the predictions
+plt.figure(figsize=(10, 6))
+plt.scatter(X_test, y_test, color='red', label='Actual')
+plt.plot(X_test, y_pred, color='blue', linewidth=3, label='Predicted')
+plt.title('Linear Regression: Actual vs Predicted Proportion of Deaths in Clinic 1')
+plt.xlabel('Year')
+plt.ylabel('Proportion of Deaths')
+plt.legend()
+plt.show()
+
+# Evaluate the model
+mse = mean_squared_error(y_test, y_pred)
+print('Mean Squared Error:', mse)
