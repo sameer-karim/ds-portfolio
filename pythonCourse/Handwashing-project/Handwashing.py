@@ -3,8 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.linear_model import LinearRegression
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error
+from sklearn.preprocessing import PolynomialFeatures, StandardScaler
+from sklearn.pipeline import make_pipeline
+from sklearn.model_selection import cross_val_score
 
 # Load data
 yearly_df = pd.read_csv('Data/yearly_deaths_by_clinic.csv')
@@ -53,31 +54,37 @@ axes[1].set_title('Proportion of Deaths in Clinic 2 over Years')
 plt.tight_layout()
 plt.show()
 
-# Basic Machine Learning - Linear Regression
-# Let's predict the proportion of deaths in Clinic 1 based on the year
-X = clinic_1[['year']]
-y = clinic_1['Proportion of Deaths']
+# Feature Engineering
+monthly_df['date'] = pd.to_datetime(monthly_df['date'])
+monthly_df['month'] = monthly_df['date'].dt.month
+monthly_df['day'] = monthly_df['date'].dt.day
 
-# Split the data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# Polynomial Regression
+degree = 3  # Adjust the degree as needed
+model = make_pipeline(PolynomialFeatures(degree), StandardScaler(), LinearRegression())
 
-# Create and fit the model
-model = LinearRegression()
-model.fit(X_train, y_train)
+# Features and Target
+X = monthly_df[['year', 'month', 'day']]
+y = monthly_df['deaths']
 
-# Predict on the test set
-y_pred = model.predict(X_test)
+# Cross-Validation
+cv_scores = cross_val_score(model, X, y, cv=5, scoring='neg_mean_squared_error')
+avg_mse = -np.mean(cv_scores)
 
-# Visualize the predictions
+# Fit the model
+model.fit(X, y)
+
+# Predict on the full dataset for visualization
+y_pred = model.predict(X)
+
+# Plot actual vs predicted
 plt.figure(figsize=(10, 6))
-plt.scatter(X_test, y_test, color='red', label='Actual')
-plt.plot(X_test, y_pred, color='blue', linewidth=3, label='Predicted')
-plt.title('Linear Regression: Actual vs Predicted Proportion of Deaths in Clinic 1')
-plt.xlabel('Year')
-plt.ylabel('Proportion of Deaths')
+plt.scatter(monthly_df['date'], y, color='red', label='Actual')
+plt.plot(monthly_df['date'], y_pred, color='blue', label='Predicted')
+plt.title('Polynomial Regression: Actual vs Predicted Deaths')
+plt.xlabel('Date')
+plt.ylabel('Number of Deaths')
 plt.legend()
 plt.show()
 
-# Evaluate the model
-mse = mean_squared_error(y_test, y_pred)
-print('Mean Squared Error:', mse)
+print('Average Cross-Validation MSE:', avg_mse)
