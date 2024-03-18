@@ -53,39 +53,3 @@ axes[1].set_title('Proportion of Deaths in Clinic 2 over Years')
 
 plt.tight_layout()
 plt.show()
-
-# Feature Engineering
-monthly_df['date'] = pd.to_datetime(monthly_df['date'])
-monthly_df['year'] = monthly_df['date'].dt.year
-monthly_df['month'] = monthly_df['date'].dt.month
-monthly_df['day'] = monthly_df['date'].dt.day
-
-# Polynomial Regression
-degree = 3  # Adjust the degree as needed
-model = make_pipeline(PolynomialFeatures(degree), StandardScaler(), LinearRegression())
-
-# Features and Target
-X = monthly_df[['year', 'month', 'day']]
-y = monthly_df['deaths']
-
-# Cross-Validation
-cv_scores = cross_val_score(model, X, y, cv=5, scoring='neg_mean_squared_error')
-avg_mse = -np.mean(cv_scores)
-
-# Fit the model
-model.fit(X, y)
-
-# Predict on the full dataset for visualization
-y_pred = model.predict(X)
-
-# Plot actual vs predicted
-plt.figure(figsize=(10, 6))
-plt.scatter(monthly_df['date'], y, color='red', label='Actual')
-plt.plot(monthly_df['date'], y_pred, color='blue', label='Predicted')
-plt.title('Polynomial Regression: Actual vs Predicted Deaths')
-plt.xlabel('Date')
-plt.ylabel('Number of Deaths')
-plt.legend()
-plt.show()
-
-print('Average Cross-Validation MSE:', avg_mse)
