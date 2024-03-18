@@ -1,0 +1,250 @@
+---
+title: "Who has a harder time voting: Democrats or Republicans?"
+subtitle: "Datasci 203: Lab 1"
+author: "RV Wallbangers - Marco Zanchetta, Sameer Karim, James Cisneros"
+date: "2024-03-05"
+output: 
+  pdf_document: 
+    toc: true
+    number_sections: true
+---
+
+\newpage
+\setcounter{page}{1}
+
+```{r setup, include=FALSE}
+library(ggplot2)
+library(dplyr)
+library(magrittr)
+library(knitr)
+library(moments)
+
+
+options(tinytex.verbose = TRUE)
+knitr::opts_chunk$set(echo=FALSE)
+```
+
+```{r get-data, include=FALSE}
+anes <- read.csv("Data/anes_pilot_2022_csv_20221214.csv")
+```
+
+# Importance and Context
+In the United States, the right and power to vote is a fundamental ideal in the country's democracy. Congress has enacted four constitutional amendments and a host of federal laws centered around voting. However, the aftermath of the 2020 presidential election ignited claims of widespread voter fraud. The fraud claims, in turn, launched state legislative agendas on both sides of the aisle focusing on changing the rules governing voting. In 2023, 356 bills creating voting restrictions were considered in 47 states, and state houses across all 50 states considered 664 expansive laws \footnote{Brennan Center for Justice. "Voting Laws Roundup: 2023 in Review" (2024).}. The right and power for a citizen to cast their vote is still evolving.
+
+This analysis contributes to the discussion of the ability for citizens to vote, focusing on the differences in reported difficulties between those who identify as Democrat and Republican. National elections are decided by slim margins, and any hurdles that disproportionately affect one party over the other could change the outcome of the election. As such, this analysis addresses the following research question:
+\begin{quote}
+    \textit{Do Democratic voters or Republican voters experience more difficulty voting?}
+\end{quote}
+The answer to this question could point to further research and eventually legislative action that uncovers and eradicates hindrances to the voting process. Additionally, it would motivate the affected party to push changes, because a meaningful difference in difficulty could mean the difference between being in power and out of it. Lastly, this provides essential information to citizens on the their ability to exercise their fundamental right to participate in a democracy.
+
+# Data and Methodology  
+```{r row-counts}
+
+nrow_original <- nrow(anes)
+
+nrow_valid <- anes %>%
+    filter(votehard != -1 & pid_x != 4 & !is.na(pid_x)) %>%
+    nrow
+
+```
+
+Our analysis uses data from the American National Election Studies (ANES) 2022 Pilot Study. This is an observational dataset generated from a cross-sectional survey conducted on the internet using the YouGov panel. The YouGov panel is not nationally representative and consists of participants who sign up to complete questionnaires in exchange for rewards. This dataset includes `r nrow_original` individuals. We remove individuals who do not have a response to the voting difficulty question as well as individuals identified as "Independent". This leaves `r nrow_valid` individuals.
+
+Democratic and Republican voters are individuals over the age of 18 (the legal voting age) that self-identify a preference for the respective party. To operationalize this concept, we look at reported party preferences and include individuals that "lean" towards one party \footnote{Petrocik, John. "Measuring party support: Leaners are not independents." (2009).}. Alternatives to this approach include only recognizing "registered" voters as "voters" and assigning party affiliation based on voting history. However, we are analyzing the difficulties within the voting process and decided that these difficulties could create disparities between activity results and actual preferences.
+
+Voting difficulty is the reported perception of the ease or difficulty of any part of the voting process by an individual. To operationalize this concept, we compare the responses to the question "How difficult was it for your to vote?". Responses are reported on a 5-point scale that range from 1 ("Not difficult at all") to 5 ("Extremely difficult"). The analysis converts these responses to a binary variable with 0 being "Not Difficult" (as demonstrated by a response of 1, "Not difficult") and 1 being "Difficult" (as demonstrated by a response of greater than 1). It is possible to keep the 5-point scale for analysis, however, as we report in Table 1, even when combined, the responses categorized as "Difficult" are a small fraction of "Not Difficult". Additionally, our analysis is not examining the different levels of difficulty, only if the process is or is not difficult.  
+
+```{r make-summary-table, include = FALSE}
+difficulty_order <- c("Not Difficult",
+                      "Difficult")
+
+summary_table <- anes %>%
+    filter(votehard != -1 & pid_x != 4 & !is.na(pid_x)) %>%
+    mutate(
+        party = case_when(
+            pid_x < 4 ~ "Democrat",
+            pid_x > 4 ~ "Republican"
+        ),
+        difficulty = case_when(
+            votehard == 1 ~ difficulty_order[1],
+            votehard > 1 ~ difficulty_order[2]
+        )
+    ) %$%
+   table(
+        party,
+        difficulty
+    ) %>%
+    addmargins(FUN = list(Total = sum))
+```
+
+```{r summary-table}
+kable(
+    summary_table[, c(difficulty_order, "Total")],
+    digits = 2,
+    caption = "Voting Difficulty by Party Identification",
+    booktabs = TRUE
+)
+```
+
+```{r difficulty-barplot}
+
+difficulty_graph <- summary_table[1:2,difficulty_order] %>%
+    prop.table(margin = 1) %>%
+    as.data.frame() %>%
+    ggplot(aes(fill = party, y = Freq, x = difficulty)) +
+    geom_bar(position = "dodge", stat = "identity") +
+    ggtitle(label = "Voting Difficulty by Political Party Identification",
+            subtitle = "(Percent of Party Identification)") +
+    xlab("Difficulty Rating") + 
+#    scale_x_discrete(labels = difficulty_order) +
+    ylim(0, 1) +
+    scale_fill_manual(values = c("royalblue4", "coral2")) + 
+    geom_text(aes(label = paste0(round(Freq*100, 1), "%")), 
+              vjust = -0.25,
+              position = position_dodge(.9)) +
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          panel.background = element_blank(), 
+          axis.line.x = element_line(colour = "black"),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.title.y = element_blank(),
+          legend.title = element_blank(),
+          legend.position = "top",
+          legend.justification = "left",
+          legend.direction = "horizontal")
+
+```
+
+```{r plots, fig.cap = "Reported Voting Difficulty by Party Identification", fig.pos = "!b", fig.height = 3}
+difficulty_graph
+```
+
+```{r summary-metrics}
+dem_not_difficult <- summary_table[1:2,difficulty_order] %>%
+    prop.table(margin = 1) %>%
+    as.data.frame() %>%
+    filter((party == "Democrat") & (difficulty == "Not Difficult")) %>%
+    .[,"Freq"]*100
+
+dem_difficult <- summary_table[1:2,difficulty_order] %>%
+    prop.table(margin = 1) %>%
+    as.data.frame() %>%
+    filter((party == "Democrat") & (difficulty == "Difficult")) %>%
+    .[,"Freq"]*100
+
+rep_not_difficult <- summary_table[1:2,difficulty_order] %>%
+    prop.table(margin = 1) %>%
+    as.data.frame() %>%
+    filter((party == "Republican") & (difficulty == "Not Difficult")) %>%
+    .[,"Freq"]*100
+
+rep_difficult <- summary_table[1:2,difficulty_order] %>%
+    prop.table(margin = 1) %>%
+    as.data.frame() %>%
+    filter((party == "Republican") & (difficulty == "Difficult")) %>%
+    .[,"Freq"]*100
+
+skew <- anes %>%
+    filter(votehard != -1 & pid_x != 4 & !is.na(pid_x)) %>%
+    mutate(
+        difficulty = case_when(
+            votehard == 1 ~ 0,
+            votehard > 1 ~ 1
+        )
+    ) %>%
+    select(difficulty) %>%
+    skewness()
+
+dem_var <- anes %>%
+    filter(votehard != -1 & pid_x < 4 & !is.na(pid_x)) %>%
+    mutate(
+        difficulty = case_when(
+            votehard == 1 ~ 0,
+            votehard > 1 ~ 1
+        )
+    ) %>%
+    summarize(variance = var(difficulty)) %>%
+    pull()
+
+rep_var <- anes %>%
+    filter(votehard != -1 & pid_x > 4 & !is.na(pid_x)) %>%
+    mutate(
+        difficulty = case_when(
+            votehard == 1 ~ 0,
+            votehard > 1 ~ 1
+        )
+    ) %>%
+    summarize(variance = var(difficulty)) %>%
+    pull()
+
+summary_df <- as.data.frame(summary_table)
+
+total_rep <- summary_df %>%
+  filter(party == "Republican" & difficulty == "Total") %>%
+  pull(Freq)
+
+total_dem <- summary_df %>%
+  filter(party == "Democrat" & difficulty == "Total") %>%
+  pull(Freq)
+```
+
+Figure 1 plots the percentage of individuals within a party that reported the voting process as either "Not Difficult" or "Difficult". We find that `r round(dem_not_difficult, 2)`% of Democrats report that voting is not difficult while `r round(rep_not_difficult, 2)`% of Republicans report that voting is not difficult.
+
+Both our grouping variable and outcome variable are measured at the binary level, however there is a high level of skewness (skewness = `r round(skew, 2)`). Given the skew, we will use the Wilcoxon Rank-Sum Test. There are 2 versions of this test, however because the variances of the Democratic and Republican distributions are not equal (`r round(dem_var,2)` and `r round(rep_var,2)`, respectively), we will use the Hypothesis of Comparisons Version.
+The null hypothesis of our Wilcoxon Rank-Sum Test is as follows:
+\begin{quote}
+    \textbf{Null Hypothesis:} \textit{The probability that a Democrat experiences more difficulty voting than a Republican is the same as the probability that a Republican experiences more difficulty voting than a Democrat.}
+\end{quote}
+In order for a Wilcoxon Rank-Sum Test Hypothesis of Comparisons Version to produce reliable inference, the following must be true: the data must be drawn from an i.i.d. sample; and, measured (at least) on an ordinal scale. We address each of these requirements in turn.
+
+First, data must be generated via an i.i.d. process.  The ANES 2018 pilot uses a panel of individuals from the YouGov platform. There is a possibility that this introduces dependencies.  For example, participants may tell friends or family members about YouGov, resulting in a cluster of individuals that give similar responses.  Nevertheless, YouGov claims to have millions of users, which suggests that links between individuals should be rare. 
+
+Second, the outcome variable must be measured (at least) on an ordinal scale. In our case, the variable for voting difficulty has been translated into a binary variable which is an ordinal and metric variable.
+
+
+# Results
+
+```{r run-test}
+test <- anes %>%
+    filter(votehard != -1 & pid_x != 4 & !is.na(pid_x)) %>%
+    mutate(
+        party = case_when(
+            pid_x < 4 ~ "Democrat",
+            pid_x > 4 ~ "Republican"
+        ),
+        difficulty = case_when(
+            votehard == 1 ~ 0,
+            votehard > 1 ~ 1
+        )
+    ) %$%
+    wilcox.test(
+        votehard~party)
+
+expected_W <- (total_dem * total_rep) / 2
+
+cat("Wilcoxon rank sum test with continuity correction\n\n")
+cat("Data: votehard by party\n")
+cat("W =", test[["statistic"]], ", p-value =", format(test[["p.value"]], scientific = TRUE), "\n")
+cat("alternative hypothesis: true location shift is", ifelse(test[["alternative"]] == "two.sided", "not equal to 0", test[["alternative"]]), "\n")
+cat("Expected test statistic under the null hypothesis: E(W) =", expected_W)
+```
+As indicated in the results above, the test statistic (W=`r test[["statistic"]]`) is considerably higher then the test statistics expected under the Null hypothesis \(H_0\) (\(E(W)\)=`r expected_W`). This discrepancy yields evidence that individuals who identify as Democrats encounter more voting difficulties as compared to those identifying as Republicans. In assessing statistical significance, the test p-value (p=`r format(round(test[["p.value"]],6), nsmall=6)`) is notably lower than the conventional alpha level ($\alpha$=0.05), indicating a reasonable basis for rejecting the Null hypothesis \(H_0\). 
+From a practical perspective, this result appears potentially important. In the Republican group, `r format(round(rep_difficult,2), nsmall=2)`% of participants experienced difficulty voting. This compares to `r format(round(dem_difficult,2), nsmall=2)`% in the Democrats group, a difference of `r format(round(dem_difficult - rep_difficult,2), nsmall=2)` percentage points. This is a significant difference, especially when analyzed in the context of a highly competitive, polarized electorate, when any hurdles that disproportionately affect one party over the other could change the outcome of the election.
+
+Several limitations of our test affect the conclusions that may be drawn from it. It is important to note that the analysis enables the examination of associations between political party affiliation and self-reported voting difficulty but does not ascertain causality between these variables. Additionally, the ANES data is not nationally representative, suggesting that our results may not generalize to the entire US population.
+
+# Discussion
+
+This study indicates that individuals supporting the Democratic party may encounter more voting difficulties as compared to those supporting the Republican party. The effect appears practically significant, with the first group estimated to be more than twice as likely to experience difficulties while trying to cast a vote. While the absolute number of people experiencing difficulties voting remains small compared to the entire sample size, in a polarized and closely divided electorate, the higher level of difficulty could potentially dissuade Democratic voters from participating, influencing the outcomes of tightly contested elections.
+
+Our findings carry significant implications for various interested parties. They may offer evidence for legislative bodies, highlighting potential shortcomings in the current voting process. Additionally, our results offer insight to the American population, serving as evidence that there exist obstacles disproportionately impacting one political party over the other. This underscores a potential barrier to their fundamental right to participate fully in a democratic system.
+
+While this study addresses voting difficulty broadly, future studies could delve into specific factors contributing to voting challenges. Identifying the most significant contributing factor would help pinpoint areas that require attention for achieving parity between parties. Ultimately, a deeper understanding of the voting experiences of individuals supporting different parties can benefit society at large by unveiling current barriers in existing voting processes.
+
+
+
+
+
+
+

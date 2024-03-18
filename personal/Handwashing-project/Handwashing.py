@@ -56,6 +56,7 @@ plt.show()
 
 # Feature Engineering
 monthly_df['date'] = pd.to_datetime(monthly_df['date'])
+monthly_df['year'] = monthly_df['date'].dt.year
 monthly_df['month'] = monthly_df['date'].dt.month
 monthly_df['day'] = monthly_df['date'].dt.day
 
