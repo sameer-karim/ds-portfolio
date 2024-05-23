@@ -1,0 +1,267 @@
+---
+title: "lab 2"
+author: 'michelle liu, branndon marion, sameer karim'
+output: pdf_document
+latex_engine: pdflatex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE}
+install.packages("caret", repos = "https://cran.r-project.org")
+install.packages("stargazer", repos = "https://cran.r-project.org")
+install.packages("remotes", repos = "https://cran.r-project.org")
+install.packages("tidyverse", repos = "https://cran.r-project.org")
+install.packages("stargazer", repos = "https://cran.r-project.org")
+install.packages("ggplot2", repos = "https://cran.r-project.org")
+```
+
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(stargazer)
+library(caret)
+library(fec16)
+library(dplyr)
+library(stargazer)
+library(ggplot2)
+library(tidyr)
+library(gridExtra)
+library(lmtest)
+library(sandwich)
+library(stats)
+library(lmtest)
+library(rmarkdown)
+library(moments)
+library(magrittr)
+library(sandwich)
+```
+
+## Data Exploration
+```{r}
+# no missing data
+data <- read.csv("ObesityDataSet_raw_and_data_synthetic.csv")
+colnames(data) <- tolower(colnames(data)) 
+
+data <- data %>%
+rename(hist_overweight = family_history_with_overweight,
+         high_caloric = favc, active = faf)
+
+colSums(is.na(data))
+data_clean <- na.omit(data) 
+
+```
+```{r}
+# Apply max and min functions to each column
+max_values <- sapply(data, max)
+min_values <- sapply(data, min)
+
+# Print the maximum and minimum values of each column
+print("Maximum values:")
+print(max_values)
+print("Minimum values:")
+print(min_values)
+
+unique_var <- unique(data$ch2o)
+```
+
+```{r}
+# height in m, weight in kg
+data$bmi <- data$weight / (data$height^2)
+data$age_30 <- ifelse(data$age > 30, 1, 0)
+
+# setting an exploration set
+set.seed(123)
+
+dt = sort(sample(nrow(data), nrow(data)*.7))
+exploration_set<-data[-dt,]
+confirmation_set<-data[dt,]
+
+cat("Dimensions of exploration set:", dim(exploration_set), "\n")
+cat("Dimensions of confirmation set:", dim(confirmation_set), "\n")
+
+```
+## histogram of age by gender
+```{r}
+male_data <- confirmation_set[confirmation_set$gender == "Male",]
+female_data <- confirmation_set[confirmation_set$gender == 'Female', ]
+
+# age histograms by gender
+# par(mfrow = c(2, 1))  # Set layout to 2 rows, 1 column
+
+# histogram for males
+hist(male_data$age, 
+     main = "Distribution of Age for Males",
+     xlab = "Age",
+     ylab = "Frequency",
+     col = "skyblue",
+     border = "darkblue",
+     breaks = 100)
+
+# histogram for females
+hist(female_data$age, 
+     main = "Distribution of Age for Females",
+     xlab = "Age",
+     ylab = "Frequency",
+     col = "pink",
+     border = "darkred",
+     breaks = 100)
+```
+## scatter plot of age and bmi by gender
+```{r}
+# scatter plot of age and bmi
+
+plot(male_data$age, male_data$bmi, 
+     xlab = "Age", ylab = "BMI", col = "blue")
+points(female_data$age, female_data$bmi,
+       col = "red")
+
+# Add legend
+legend("topright", 
+       legend = c("Male", "Female"), 
+       col = c("blue", "red"), 
+       pch = 1)
+
+# Add titles and labels
+title("Scatter Plot of BMI and Age by Gender")
+xlabel <- "Age"
+ylabel <- "BMI"
+mtext(xlabel, side = 1, line = 3)
+mtext(ylabel, side = 2, line = 3)
+```
+## model_1
+```{r  results='asis' }
+# model_1, restricted model
+model_1 <- lm(bmi ~ age, data = confirmation_set)
+
+coef_1 <- coeftest(model_1, vcov = vcovHC(model_1, type = 'HC0'))
+robust_se <- sqrt(diag(vcovHC(model_1)))
+names(model_1$coefficients) <- c("Intercept", "Age")
+model_1$se <- robust_se
+
+# Summary of the model
+summary(model_1)
+
+stargazer(model_1, 
+          type = "latex", 
+          title = "Regression Model 1 : Age on BMI",
+          out = "1.txt")
+```
+```{r  results='asis' }
+# model_1_30, restricted model
+model_1_30 <- lm(bmi ~ age_30, data = confirmation_set)
+
+coef_1_30 <- coeftest(model_1_30, vcov = vcovHC(model_1_30, type = 'HC0'))
+robust_se_1_30 <- sqrt(diag(vcovHC(model_1_30)))
+names(model_1_30$coefficients) <- c("Intercept", "Age Over 30")
+model_1_30$se <- robust_se_1_30
+
+# Summary of the model
+summary(model_1_30)
+
+stargazer(model_1_30, 
+          type = "latex", 
+          title = "Regression Model 1 : Age on BMI, ",
+          out = "1_30.txt")
+```
+## scatter plot with regression line
+```{r}
+# scatter plot of age and bmi
+plot(confirmation_set$age, confirmation_set$bmi, xlab = "Age", ylab = "BMI", main = "Scatterplot of Age and BMI")
+# Add regression line
+abline(model_1, col = "red")
+```
+
+
+
+## model_2
+```{r results='asis'}
+# model_2, includes family history and physical activity
+model_2 <- lm(bmi ~ age_30 + hist_overweight + active, data = confirmation_set)
+
+coef_2 <- coeftest(model_2, vcov = vcovHC(model_2, type = 'HC0'))
+robust_se_2 <- sqrt(diag(vcovHC(model_2)))
+names(model_2$coefficients) <- c("Intercept","Age over 30", "Family History of Overweight", "Physical Activity")
+model_2$se <- robust_se_2
+
+# Summary of the model
+summary(model_2)
+
+stargazer(model_2, 
+          type = "latex", 
+          title = "Regression Model 2 : Age, Family History, and Physical Activity on BMI",
+          out = "2.txt")
+```
+
+## model_3
+```{r results='asis'}
+# model_3, includes family history, physical activity, and dietary habits
+model_3 <- lm(bmi ~ age + hist_overweight + active + ch2o + high_caloric, data = confirmation_set)
+
+coef_3 <-coeftest(model_3, vcov = vcovHC(model_3, type = 'HC0'))
+robust_se_3 <- sqrt(diag(vcovHC(model_3)))
+names(model_3$coefficients) <- c("Intercept", "Age", "Family History of Overweight", "Physical Activity", "Water Consumption", "Frequent Consumption of High Caloric Foods")
+
+model_3$se <- robust_se_3
+
+# Summary of the model
+summary(model_3)
+
+stargazer(model_3, 
+          type = "latex", 
+          title = "Regression Model 3 : Age, Family History, Physical Activity, and Dietary Habits on BMI",
+          out = "3.txt")
+```
+
+## anova 
+```{r}
+anova_21 <-anova(model_2, model_1, test = "F")
+anova_31 <-anova(model_3, model_1, test = "F")
+anova_32 <-anova(model_3, model_2, test = "F")
+```
+## practical significance
+```{r}
+cohen_1 <- (summary(model_1)$r.squared / (1 - summary(model_1)$r.squared))
+cohen_1
+cohen_2 <- (summary(model_2)$r.squared / (1 - summary(model_2)$r.squared))
+cohen_2
+cohen_3 <- (summary(model_3)$r.squared / (1 - summary(model_3)$r.squared))
+cohen_3
+```
+
+
+
+## train vs test set
+```{r}
+model_train <- lm(bmi ~ age + hist_overweight + high_caloric + active, data = exploration_set)
+summary(model_train)
+
+#test_predictions <- predict(model_train, newdata = test)
+```
+
+## stargazer regression models
+```{r results='asis'}
+stargazer(model_1, model_2, model_3, type = "text", 
+            title = "Regression Models of Age, Family History, and Lifestly Habits on BMI",
+        out = "models.txt")
+          
+```
+## stargazer regression models
+```{r results='asis'}
+stargazer(model_1, model_1_30, type = "text", 
+            title = "Regression Models of Age on BMI",
+        out = "models_age.txt")
+          
+```
+```{r results='asis'}
+anova_results <- data.frame(
+  Test = c("Model 2 to Model 1", "Model 3 to Model 1", "Model 3 to Model 2"),
+  F_statistic = c(anova_21$F, anova_31$F, anova_32$F),
+  p_value = c(anova_21$`Pr(>F)`, anova_31$`Pr(>F)`, anova_32$`Pr(>F)`)
+)
+
+# Print the combined results using stargazer
+stargazer(anova_results, type = "text", out = "anova.txt")
+```
