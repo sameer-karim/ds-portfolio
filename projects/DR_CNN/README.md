@@ -1,0 +1,1 @@
+This project designs and implements a Convolutional Neural Network to detext diabetic retinopathies from retina images taken using fundus photography. Concepts demonstrated: data preprocessing, feature engineering, multiple models designed and implemented, and hyperparameter tuning.
