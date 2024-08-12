@@ -1,0 +1,1 @@
+This project tackles the question: What is the relationship between age and Body Mass Index (BMI), while taking into account other demographic and lifestyle factors? Our report includes synthesizing a dataset, baseline linear regression modeling, iterating, and discussing our results. 
