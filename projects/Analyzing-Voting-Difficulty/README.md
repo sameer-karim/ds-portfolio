@@ -1,1 +1,1 @@
-This project tackles the question: Do Democratic or Republican voters experience more difficulty voting? We found a dataset from the American National Election Studies. We employed the use of the Wilcoxon rank sum test with continuity correction to draw our conclusions.
+This project tackles the question: Do Democratic or Republican voters experience more difficulty voting? Our group found a dataset from the American National Election Studies and employed the use of the Wilcoxon rank sum test with continuity correction to draw our conclusions.
