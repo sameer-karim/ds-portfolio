@@ -1,1 +1,0 @@
-Welcome to my personal repo! You will find my Berkeley MIDS coursework along with personal projects I have developed on my own. If you have any feedback or would like to connect, please email me at sameerkarim@berkeley.edu or connect with me on [LinkedIn](www.linkedin.com/in/sameer-karim)  
